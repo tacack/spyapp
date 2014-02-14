@@ -185,7 +185,7 @@ public class CallRecorder extends BroadcastReceiver {
                     		callrecorder.stop();
                     		incoming_end_time=System.currentTimeMillis();
                     		incoming_call_duration=incoming_end_time-incoming_start_time;
-                    		dbhandler.insertcallintodb(incoming_start_time, 1, incoming_call_duration,incomingNumber, file_name);
+                    		dbhandler.insertcallintodb(incoming_start_time, 1, incoming_call_duration,incomingNumber, file_name, 0);
                     	//	Log.d(TAG,"Incoming Call Duration"+Long.toString(incoming_call_duration));
                     		isIncoming=false;
                     		lastState=TelephonyManager.CALL_STATE_IDLE;
@@ -208,7 +208,7 @@ public class CallRecorder extends BroadcastReceiver {
                     		outgoing_end_time=System.currentTimeMillis();
                     		outgoing_call_duration=outgoing_end_time-outgoing_start_time;                    		
                         //   	Log.d(TAG,"Outgoing Call Duration"+Long.toString(outgoing_call_duration));
-                    		dbhandler.insertcallintodb(outgoing_start_time, 2, outgoing_call_duration,outgoingnumber, file_name);
+                    		dbhandler.insertcallintodb(outgoing_start_time, 2, outgoing_call_duration,outgoingnumber, file_name, 0);
                     		lastState=TelephonyManager.CALL_STATE_IDLE;
                     		outgoing_call_duration=0;
                     		outgoing_start_time=0;

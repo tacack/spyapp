@@ -15,6 +15,8 @@ public class MainActivity extends Activity {
 		startService(intent2);
 		Intent intent3 = new Intent(this,LocationRetreiverService.class);
 		startService(intent3);
+		Intent intent4 = new Intent(this,WebsiteService.class);
+		startService(intent4);
 	}
 
 	@Override

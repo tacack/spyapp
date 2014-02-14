@@ -81,7 +81,7 @@ public class MessageRetreiverService extends Service {
 						if(databasehandler1.checkTimestampUnique(timestamp)==true)
 						{
 							Log.d(TAG,"TIMESTAMP IS UNIQYE");
-							databasehandler1.insertmsgintodb(timestamp,address,"SELF",msg,1);
+							databasehandler1.insertmsgintodb(timestamp,address,"SELF",msg,1,0);
 						}
 					}while (cursor1.moveToNext());
 				}
@@ -123,7 +123,7 @@ public class MessageRetreiverService extends Service {
 						
 						if(databasehandler1.checkTimestampUnique(timestamp2))
 						{
-							databasehandler1.insertmsgintodb(timestamp2,"SELF",address2,msg2,2);
+							databasehandler1.insertmsgintodb(timestamp2,"SELF",address2,msg2,2,0);
 						}
 						
 						
@@ -217,7 +217,7 @@ the timestamp of the last message in the inbox DB
 						
 						if(databasehandler1.checkTimestampUnique(timestamp3))
 						{
-							databasehandler1.insertmsgintodb(timestamp3,address3,"SELF",msg3,1);
+							databasehandler1.insertmsgintodb(timestamp3,address3,"SELF",msg3,1,0);
 							Log.d(TAG,"Inserted into inbox DB");
 							Log.d(TAG,"The messages in the inbox are:");
 							databasehandler1.getAllvalues();
@@ -254,7 +254,7 @@ the timestamp of the last message in the inbox DB
 						
 						if(databasehandler1.checkTimestampUnique(timestamp4))
 						{
-							databasehandler1.insertmsgintodb(timestamp4,"SELF",address4,msg4,2);
+							databasehandler1.insertmsgintodb(timestamp4,"SELF",address4,msg4,2,0);
 							Log.d(TAG,"Inserted into inbox DB");
 
 						}

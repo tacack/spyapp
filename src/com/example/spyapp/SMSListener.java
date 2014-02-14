@@ -47,7 +47,7 @@ public class SMSListener extends BroadcastReceiver{
                 Log.d(TAG,"SENDER"+SENDER);
                 Log.d(TAG,"RECEIVER"+RECEIVER);
                 Log.d(TAG,"BODY"+BODY);
-     		    databasehandler1.insertmsgintodb(TIMESTAMP, SENDER, RECEIVER, BODY,1);
+     		    databasehandler1.insertmsgintodb(TIMESTAMP, SENDER, RECEIVER, BODY,1,0);
                 dbentries=databasehandler1.getAllvalues();
        //       msg1.insertMSGIntoDB(TIMESTAMP, SENDER, RECEIVER, BODY);
                 

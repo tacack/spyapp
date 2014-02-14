@@ -176,7 +176,7 @@ private class LocationListener implements android.location.LocationListener{
               databasehandler1.insertlocintodb(
            			LastLocation.getTime(),
            			LastLocation.getLatitude(),
-           			LastLocation.getLongitude());
+           			LastLocation.getLongitude(),0);
                 	  
               }
         	/*  if (isBetterLocation(GPSLocation)==true)
@@ -198,7 +198,7 @@ private class LocationListener implements android.location.LocationListener{
                 databasehandler1.insertlocintodb(
   	     			LastLocation.getTime(),
   	     			LastLocation.getLatitude(),
-  	     			LastLocation.getLongitude());
+  	     			LastLocation.getLongitude(),0);
   	    
             }
 /*
