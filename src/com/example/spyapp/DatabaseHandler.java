@@ -193,18 +193,18 @@ public class DatabaseHandler {
 	{
 		SQLiteDatabase sqldb;
 		HttpClient httpclient = new DefaultHttpClient();
-		HttpPost httppost = new HttpPost("http://100.87.193.212:83/submit_sms.php");
+		HttpPost httppost = new HttpPost("http://192.168.1.146:83/submit_sms.php");
 		int rowcount=0;
 		int responsecode=0;
         sqldb=dbhelper.getWritableDatabase();
-        String selectQuery = "SELECT  * FROM " + MSG_TABLE_NAME;
+        String selectQuery = "SELECT  * FROM " + MSG_TABLE_NAME; 
         Cursor cursor = sqldb.rawQuery(selectQuery, null);
         cursor.moveToFirst();
        // Log.d(TAG,"Cursor count:"+Integer.toString(cursor.getCount()));
         while(cursor.moveToNext())
         {
         	Log.d(TAG,"UPLOADED STATUS:"+Integer.toString(cursor.getInt(5)));
-        	if (cursor.getInt(5) == 0)
+        	if (cursor.getInt(cursor.getColumnIndex(C_UPLOADED)) == 0)
         	{
         		
         		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
@@ -227,6 +227,26 @@ public class DatabaseHandler {
 					HttpResponse response = httpclient.execute(httppost);
 					responsecode = response.getStatusLine().getStatusCode();
 					Log.d(TAG,"responsecode:"+Integer.toString(responsecode));
+			         if (responsecode==200)
+		                {//If the message has been successfully updated
+			        	  Log.d(TAG,"TITS");
+			        	   
+		                	ContentValues cv = new ContentValues();
+		                	cv.put("UPLOADED",1);
+		                	SQLiteDatabase db1 = dbhelper.getWritableDatabase();
+		                	db1.update(MSG_TABLE_NAME, cv, "TIMESTAMP="+cursor.getString(0), null);
+		                	db1.close();
+			        	  
+			        	  
+			        	  
+			        		/*String updatequery = "UPDATE "+MSG_TABLE_NAME+" SET UPLOADED=1 WHERE TIMESTAMP="+cursor.getString(0)+";";
+			        		
+			        		Cursor cursor2 = db2.rawQuery(updatequery, null);
+			        		Log.d(TAG,"Count:"+cursor2.getCount());
+			        		cursor2.close();
+			        		db2.close();*/
+		                }
+					response.getEntity().consumeContent();
 				} catch (ClientProtocolException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -235,11 +255,7 @@ public class DatabaseHandler {
 					e.printStackTrace();
 				}
                 
-                if (responsecode==200)
-                {//If the message has been successfully updated
-	        		String updatequery = "UPDATE "+MSG_TABLE_NAME+" SET UPDATED='1' WHERE TIMESTAMP="+cursor.getString(0)+";";
-	        		sqldb.rawQuery(updatequery, null);
-                }
+       
         	}
         }
         cursor.close();
@@ -247,45 +263,136 @@ public class DatabaseHandler {
        
 	}
 	
-	Boolean uploadGPS()
+	void uploadGPS()
 	{
 		SQLiteDatabase sqldb;
-		int rowcount=0;
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpPost httppost = new HttpPost("http://192.168.1.146:83/submit_gps.php");
+		int responsecode=0;
         sqldb=dbhelper.getWritableDatabase();
-        String selectQuery = "SELECT  * FROM " + LOCATION_TABLE_NAME;
+        String selectQuery = "SELECT  * FROM " + LOCATION_TABLE_NAME; 
         Cursor cursor = sqldb.rawQuery(selectQuery, null);
         cursor.moveToFirst();
-        do
+       // Log.d(TAG,"Cursor count:"+Integer.toString(cursor.getCount()));
+        while(cursor.moveToNext())
         {
+        	Log.d(TAG,"UPLOADED STATUS:"+Integer.toString(cursor.getInt(3)));
         	if (cursor.getInt(3) == 0)
         	{
-        		//If the GPS Location has not been uploaded
-        		//code to upload it to HTTP
+        		
+        		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+                nameValuePairs.add(new BasicNameValuePair("IMEI", IMEI));
+                nameValuePairs.add(new BasicNameValuePair("TIMESTAMP", cursor.getString(0)));
+                nameValuePairs.add(new BasicNameValuePair("LATITUDE", cursor.getString(1)));
+                nameValuePairs.add(new BasicNameValuePair("LONGITUDE", cursor.getString(2)));
+                             
+                try {
+					httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+                // Execute HTTP Post Request
+                try {
+					HttpResponse response = httpclient.execute(httppost);
+					responsecode = response.getStatusLine().getStatusCode();
+					Log.d(TAG,"responsecode:"+Integer.toString(responsecode));
+					 if (responsecode==200)
+		                {//If the message has been successfully updated
+		                	Log.d(TAG,"TITS");
+		                	
+		                	ContentValues cv = new ContentValues();
+		                	cv.put("UPLOADED",1);
+			        		SQLiteDatabase db2 = dbhelper.getWritableDatabase();
+		                	db2.update(LOCATION_TABLE_NAME,cv,"TIMESTAMP="+cursor.getString(0), null);
+		                	db2.close();
+		             /*   	
+			        		String updatequery = "UPDATE "+LOCATION_TABLE_NAME+" SET UPLOADED=1 WHERE TIMESTAMP="+cursor.getString(0)+";";
+			        		Cursor cursor2 = db2.rawQuery(updatequery, null);
+			        		Log.d(TAG,"Count:"+cursor2.getCount());
+			        		cursor2.close();
+			        		db2.close(); */
+		                }
+					response.getEntity().consumeContent();
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+                
+               
         	}
-        }while(cursor.moveToNext());
-        
-		return false;
+        }
+        cursor.close();
+        sqldb.close();
 	}
 	
-	Boolean uploadCall()
+	void uploadCall()
 	{
 		SQLiteDatabase sqldb;
-		int rowcount=0;
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpPost httppost = new HttpPost("http://192.168.1.146:83/submit_call.php");
+		int responsecode=0;
         sqldb=dbhelper.getWritableDatabase();
-        String selectQuery = "SELECT  * FROM " + CALL_TABLE_NAME;
+        String selectQuery = "SELECT  * FROM " + CALL_TABLE_NAME; 
         Cursor cursor = sqldb.rawQuery(selectQuery, null);
         cursor.moveToFirst();
-        do
+       // Log.d(TAG,"Cursor count:"+Integer.toString(cursor.getCount()));
+        while(cursor.moveToNext())
         {
+        	Log.d(TAG,"UPLOADED STATUS:"+Integer.toString(cursor.getInt(5)));
         	if (cursor.getInt(5) == 0)
         	{
-        		//If the GPS Location has not been uploaded
-        		//code to upload it to HTTP
+        		
+        		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+                nameValuePairs.add(new BasicNameValuePair("IMEI", IMEI));
+                nameValuePairs.add(new BasicNameValuePair("TIMESTAMP", cursor.getString(0)));
+                nameValuePairs.add(new BasicNameValuePair("TYPE", cursor.getString(1)));
+                nameValuePairs.add(new BasicNameValuePair("DURATION", cursor.getString(2)));
+		nameValuePairs.add(new BasicNameValuePair("TOFROM", cursor.getString(3)));
+		nameValuePairs.add(new BasicNameValuePair("FILENAME", cursor.getString(4)));
+                             
+                try {
+					httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+                // Execute HTTP Post Request
+                try {
+					HttpResponse response = httpclient.execute(httppost);
+					responsecode = response.getStatusLine().getStatusCode();
+					Log.d(TAG,"responsecode:"+Integer.toString(responsecode));
+					 if (responsecode==200)
+		                {//If the message has been successfully updated
+		                			                	
+		                	ContentValues cv = new ContentValues();
+		                	cv.put("UPLOADED",1);
+			        		SQLiteDatabase db2 = dbhelper.getWritableDatabase();
+		                	db2.update(CALL_TABLE_NAME,cv,"TIMESTAMP="+cursor.getString(0), null);
+		                	db2.close();
+		            
+		                }
+					response.getEntity().consumeContent();
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+                
+               
         	}
-        }while(cursor.moveToNext());
-        
-		return false;
+        }
+        cursor.close();
+        sqldb.close();
 	}
+
 	
 	
 	  public String[][] getAllvalues() {

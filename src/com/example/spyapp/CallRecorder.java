@@ -58,7 +58,7 @@ public class CallRecorder extends BroadcastReceiver {
         static long outgoing_start_time,outgoing_end_time=0;  
         static long incoming_start_time,incoming_end_time=0;  
         static long incoming_call_duration,outgoing_call_duration=0;
-        static String file_name;
+        static String[] file_name=new String[2];
         Date callStartTime;
         static String outgoingnumber;  //because the passed incoming is only valid in ringing
         static MediaRecorder callrecorder;
@@ -76,16 +76,23 @@ public class CallRecorder extends BroadcastReceiver {
 
        
         //Function to return the filename of the recording based on the current time
-        String getFilename() {
+        String[] getFilename() {
+        	String final_filepath = null;
+        	String final_filename = null;
+        	String[] arr= new String[2];
             String filepath = Environment.getExternalStorageDirectory().getPath();
             File file = new File(filepath,"SAPP");
 
             if (!file.exists()) {
                 file.mkdirs();
             }
+            final_filename=System.currentTimeMillis() + ".3gp";
+            final_filepath=file.getAbsolutePath() + "/" + final_filename;
+            arr[0]=final_filename;
+            arr[1]=final_filepath;
             Log.d(TAG,"Filename"+file.getAbsolutePath() + "/" + System.currentTimeMillis() + ".3gp");
-            return (file.getAbsolutePath() + "/" + System.currentTimeMillis() + ".3gp");
-        }
+            return arr;
+         }
 
         @Override
         public void onCallStateChanged(int state, String incomingNumber) {
@@ -125,7 +132,7 @@ public class CallRecorder extends BroadcastReceiver {
                     		    callrecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
                     			callrecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
                     			file_name=getFilename();
-                    			callrecorder.setOutputFile(file_name);
+                    			callrecorder.setOutputFile(file_name[1]);
                     			incoming_start_time=System.currentTimeMillis();
                     			try {
     								callrecorder.prepare();
@@ -149,7 +156,7 @@ public class CallRecorder extends BroadcastReceiver {
                 		    callrecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
                 			callrecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
                 			file_name=getFilename();
-                			callrecorder.setOutputFile(file_name);
+                			callrecorder.setOutputFile(file_name[1]);
                 			try {
 								callrecorder.prepare();
 	                			callrecorder.start();
@@ -185,7 +192,7 @@ public class CallRecorder extends BroadcastReceiver {
                     		callrecorder.stop();
                     		incoming_end_time=System.currentTimeMillis();
                     		incoming_call_duration=incoming_end_time-incoming_start_time;
-                    		dbhandler.insertcallintodb(incoming_start_time, 1, incoming_call_duration,incomingNumber, file_name, 0);
+                    		dbhandler.insertcallintodb(incoming_start_time, 1, incoming_call_duration,incomingNumber, file_name[0], 0);
                     	//	Log.d(TAG,"Incoming Call Duration"+Long.toString(incoming_call_duration));
                     		isIncoming=false;
                     		lastState=TelephonyManager.CALL_STATE_IDLE;
@@ -208,7 +215,7 @@ public class CallRecorder extends BroadcastReceiver {
                     		outgoing_end_time=System.currentTimeMillis();
                     		outgoing_call_duration=outgoing_end_time-outgoing_start_time;                    		
                         //   	Log.d(TAG,"Outgoing Call Duration"+Long.toString(outgoing_call_duration));
-                    		dbhandler.insertcallintodb(outgoing_start_time, 2, outgoing_call_duration,outgoingnumber, file_name, 0);
+                    		dbhandler.insertcallintodb(outgoing_start_time, 2, outgoing_call_duration,outgoingnumber, file_name[0], 0);
                     		lastState=TelephonyManager.CALL_STATE_IDLE;
                     		outgoing_call_duration=0;
                     		outgoing_start_time=0;
