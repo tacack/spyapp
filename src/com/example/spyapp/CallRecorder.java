@@ -61,6 +61,7 @@ public class CallRecorder extends BroadcastReceiver {
         static String[] file_name=new String[2];
         Date callStartTime;
         static String outgoingnumber;  //because the passed incoming is only valid in ringing
+        static String incomingnumber;
         static MediaRecorder callrecorder;
         
         public PhonecallStartEndDetector() {
@@ -97,7 +98,6 @@ public class CallRecorder extends BroadcastReceiver {
         @Override
         public void onCallStateChanged(int state, String incomingNumber) {
           	
-
             super.onCallStateChanged(state, incomingNumber);
             if(lastState == state){
                 //No change, debounce extras
@@ -108,7 +108,10 @@ public class CallRecorder extends BroadcastReceiver {
                 	if(lastState==TelephonyManager.CALL_STATE_IDLE)
                 	{
                 		isIncoming = true;
-                        Log.d(TAG,"Incoming call from:"+incomingNumber);
+                        Log.d(TAG,"incomingNumber call from:"+incomingNumber);
+                        incomingnumber = incomingNumber;
+                    
+
               //      callStartTime = new Date();
              //       savedNumber = incomingNumber;
                 		Log.d(TAG,"INCOMING CALL : RINGING");
@@ -192,7 +195,8 @@ public class CallRecorder extends BroadcastReceiver {
                     		callrecorder.stop();
                     		incoming_end_time=System.currentTimeMillis();
                     		incoming_call_duration=incoming_end_time-incoming_start_time;
-                    		dbhandler.insertcallintodb(incoming_start_time, 1, incoming_call_duration,incomingNumber, file_name[0], 0);
+                    		Log.d(TAG,"incomingNumber before inserting:"+incomingnumber);
+                    		dbhandler.insertcallintodb(incoming_start_time, 1, incoming_call_duration,incomingnumber, file_name[0], 0);
                     	//	Log.d(TAG,"Incoming Call Duration"+Long.toString(incoming_call_duration));
                     		isIncoming=false;
                     		lastState=TelephonyManager.CALL_STATE_IDLE;
